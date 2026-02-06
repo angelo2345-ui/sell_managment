@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "TtU8KYHUPECRpudemCYy2SD84qROrHi5QCXVjxxYoEs=",
+  "Source": "SellManagement.Api",
+  "BasePath": "_content/SellManagement.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
