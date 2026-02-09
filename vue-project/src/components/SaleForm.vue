@@ -41,7 +41,7 @@ const addToCart = () => {
     return;
   }
 
-  // Check if already in cart
+  // Verificamos si ya tenemos este producto en el carrito
   const existingItemIndex = cart.value.findIndex(item => item.productId === product.id);
   if (existingItemIndex !== -1) {
     const newQuantity = cart.value[existingItemIndex].quantity + quantity.value;
@@ -100,7 +100,7 @@ const submitSale = async () => {
     await saleService.createSale(saleData);
     successMessage.value = "¡Venta registrada con éxito!";
     
-    // Reset form
+    // Limpiamos el formulario para la siguiente venta
     cart.value = [];
     selectedClientId.value = '';
     
@@ -115,7 +115,7 @@ const submitSale = async () => {
 
 <template>
   <div class="sale-grid">
-    <!-- Panel Izquierdo: Formulario -->
+    <!-- Panel Izquierdo: Formulario de Selección -->
     <div class="card form-panel">
       <h3>Nueva Venta</h3>
       

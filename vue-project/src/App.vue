@@ -185,7 +185,7 @@ const logout = () => {
 </template>
 
 <style scoped>
-/* --- LAYOUT STRUCTURE --- */
+/* --- ESTRUCTURA GENERAL DEL DASHBOARD --- */
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
@@ -200,7 +200,7 @@ const logout = () => {
   background: linear-gradient(135deg, var(--primary) 0%, #004080 100%);
 }
 
-/* --- SIDEBAR --- */
+/* --- MENÚ LATERAL (SIDEBAR) --- */
 .sidebar {
   width: 260px;
   background-color: var(--bg-sidebar);
@@ -236,7 +236,7 @@ const logout = () => {
   color: #fff;
 }
 .brand-logo .aduanas {
-  color: var(--secondary); /* Cyan */
+  color: var(--secondary); /* Color Cyan para destacar */
 }
 
 .sidebar-nav {
@@ -288,10 +288,10 @@ const logout = () => {
   background: rgba(255,255,255,0.2);
 }
 
-/* --- MAIN CONTENT --- */
+/* --- CONTENIDO PRINCIPAL --- */
 .main-content {
   flex: 1;
-  margin-left: 260px; /* Ancho del sidebar */
+  margin-left: 260px; /* Dejamos espacio para el sidebar */
   display: flex;
   flex-direction: column;
   width: calc(100% - 260px);
@@ -311,7 +311,7 @@ const logout = () => {
 }
 
 .menu-btn {
-  display: none; /* Oculto en desktop */
+  display: none; /* Se oculta en PC */
   background: none;
   border: none;
   cursor: pointer;
@@ -320,7 +320,7 @@ const logout = () => {
 }
 
 .close-btn-mobile {
-  display: none; /* Oculto en desktop */
+  display: none; /* Se oculta en PC */
 }
 
 .top-bar-left {
@@ -373,20 +373,20 @@ const logout = () => {
   overflow-y: auto;
 }
 
-/* --- GRID SYSTEM FOR DASHBOARD --- */
+/* --- SISTEMA DE GRILLA PARA EL DASHBOARD --- */
 .grid-layout {
   display: grid;
-  grid-template-columns: 350px 1fr; /* Formulario fijo, Lista flexible */
+  grid-template-columns: 350px 1fr; /* Panel izquierdo fijo, derecho flexible */
   gap: 2rem;
   align-items: start;
 }
 
-/* Fix for Grid Item Overflow */
+/* Corrección para desbordamiento en items de grid */
 .grid-col-form, .grid-col-list {
   min-width: 0;
 }
 
-/* --- ANIMATIONS --- */
+/* --- ANIMACIONES DE TRANSICIÓN --- */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -394,10 +394,10 @@ const logout = () => {
   opacity: 0;
 }
 
-/* --- RESPONSIVE DESIGN (MOBILE) --- */
+/* --- DISEÑO RESPONSIVE (MÓVILES) --- */
 @media (max-width: 1024px) {
   .grid-layout {
-    grid-template-columns: 1fr; /* Stack vertical en tablets */
+    grid-template-columns: 1fr; /* Una sola columna en tablets/móviles */
   }
 }
 
@@ -415,7 +415,7 @@ const logout = () => {
   .main-content {
     margin-left: 0;
     width: 100%;
-    padding-top: 64px; /* Altura del top-bar fijo */
+    padding-top: 64px; /* Compensamos la barra superior fija */
   }
 
   .top-bar {
@@ -430,7 +430,7 @@ const logout = () => {
   }
   
   .close-btn-mobile {
-    display: block; /* Visible en móvil */
+    display: block; /* Aparece solo en móvil */
     background: none;
     border: none;
     color: white;
@@ -440,10 +440,10 @@ const logout = () => {
 
   .content-wrapper {
     padding: 1rem;
-    overflow-x: hidden; /* Evitar scroll horizontal global */
+    overflow-x: hidden; /* Prevenimos scroll horizontal indeseado */
   }
 
-  /* Ajustes para tablas en móviles */
+  /* Tablas adaptables para pantallas pequeñas */
   .table-responsive {
     display: block;
     width: 100%;
@@ -452,11 +452,11 @@ const logout = () => {
     margin-bottom: 1rem;
   }
   
-  /* Ajustes generales para evitar cortes */
+  /* Evitamos que las tarjetas se corten */
   .card {
     padding: 1rem;
     margin-bottom: 1rem;
-    overflow: hidden; /* Contener desbordamientos internos */
+    overflow: hidden; /* Contiene elementos internos */
   }
 
   .sidebar-overlay {
