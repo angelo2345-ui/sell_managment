@@ -41,65 +41,174 @@ namespace SellManagement.Api.Controllers
                     }
                 }
             }
-            return Ok(clients);
+
+            var response = new ApiResponse<List<Client>>
+            {
+                Success = true,
+                Message = "Lista de clientes obtenida correctamente",
+                Data = clients
+            };
+            return Ok(response);
         }
 
         // 2. CREAR UN CLIENTE
         [HttpPost]
         public IActionResult CreateClient([FromBody] Client client)
         {
-            using (var connection = _databaseService.GetConnection())
+            try
             {
-                connection.Open();
-                string sql = "INSERT INTO Clients (Name, Email, Phone) VALUES (@Name, @Email, @Phone)";
-                using (var command = new SqlCommand(sql, connection))
+                using (var connection = _databaseService.GetConnection())
                 {
-                    command.Parameters.AddWithValue("@Name", client.Name);
-                    command.Parameters.AddWithValue("@Email", client.Email);
-                    command.Parameters.AddWithValue("@Phone", client.Phone);
-                    command.ExecuteNonQuery();
+                    connection.Open();
+
+                    // Validación: Verificar si el email ya existe
+                    string checkSql = "SELECT COUNT(*) FROM Clients WHERE Email = @Email";
+                    using (var checkCmd = new SqlCommand(checkSql, connection))
+                    {
+                        checkCmd.Parameters.AddWithValue("@Email", client.Email);
+                        int count = (int)checkCmd.ExecuteScalar();
+                        
+                        if (count > 0)
+                        {
+                            return BadRequest(new ApiResponse<string>
+                            {
+                                Success = false,
+                                Message = "El correo electrónico ya está registrado.",
+                                Data = null
+                            });
+                        }
+                    }
+
+                    string sql = "INSERT INTO Clients (Name, Email, Phone) VALUES (@Name, @Email, @Phone)";
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Name", client.Name);
+                        command.Parameters.AddWithValue("@Email", client.Email);
+                        command.Parameters.AddWithValue("@Phone", client.Phone);
+                        command.ExecuteNonQuery();
+                    }
                 }
+
+                return Ok(new ApiResponse<string>
+                {
+                    Success = true,
+                    Message = "¡Cliente creado exitosamente!",
+                    Data = null
+                });
             }
-            return Ok("¡Cliente creado exitosamente!");
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Error al crear cliente: " + ex.Message,
+                    Data = null
+                });
+            }
         }
 
         // 3. ACTUALIZAR UN CLIENTE
         [HttpPut("{id}")]
         public IActionResult UpdateClient(int id, [FromBody] Client client)
         {
-            using (var connection = _databaseService.GetConnection())
+            try 
             {
-                connection.Open();
-                string sql = "UPDATE Clients SET Name = @Name, Email = @Email, Phone = @Phone WHERE Id = @Id";
-                using (var command = new SqlCommand(sql, connection))
+                using (var connection = _databaseService.GetConnection())
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-                    command.Parameters.AddWithValue("@Name", client.Name);
-                    command.Parameters.AddWithValue("@Email", client.Email);
-                    command.Parameters.AddWithValue("@Phone", client.Phone);
-                    int rows = command.ExecuteNonQuery();
-                    if (rows == 0) return NotFound("Cliente no encontrado.");
+                    connection.Open();
+                    string sql = "UPDATE Clients SET Name = @Name, Email = @Email, Phone = @Phone WHERE Id = @Id";
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@Name", client.Name);
+                        command.Parameters.AddWithValue("@Email", client.Email);
+                        command.Parameters.AddWithValue("@Phone", client.Phone);
+                        int rows = command.ExecuteNonQuery();
+                        
+                        if (rows == 0) 
+                        {
+                            return NotFound(new ApiResponse<string>
+                            {
+                                Success = false,
+                                Message = "Cliente no encontrado.",
+                                Data = null
+                            });
+                        }
+                    }
                 }
+
+                return Ok(new ApiResponse<string>
+                {
+                    Success = true,
+                    Message = "¡Cliente actualizado correctamente!",
+                    Data = null
+                });
             }
-            return Ok("¡Cliente actualizado!");
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Error al actualizar cliente: " + ex.Message,
+                    Data = null
+                });
+            }
         }
 
         // 4. ELIMINAR UN CLIENTE
         [HttpDelete("{id}")]
         public IActionResult DeleteClient(int id)
         {
-            using (var connection = _databaseService.GetConnection())
+            try
             {
-                connection.Open();
-                string sql = "DELETE FROM Clients WHERE Id = @Id";
-                using (var command = new SqlCommand(sql, connection))
+                using (var connection = _databaseService.GetConnection())
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-                    int rows = command.ExecuteNonQuery();
-                    if (rows == 0) return NotFound("Cliente no encontrado.");
+                    connection.Open();
+                    string sql = "DELETE FROM Clients WHERE Id = @Id";
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+                        int rows = command.ExecuteNonQuery();
+                        
+                        if (rows == 0) 
+                        {
+                            return NotFound(new ApiResponse<string>
+                            {
+                                Success = false,
+                                Message = "Cliente no encontrado.",
+                                Data = null
+                            });
+                        }
+                    }
                 }
+
+                return Ok(new ApiResponse<string>
+                {
+                    Success = true,
+                    Message = "¡Cliente eliminado correctamente!",
+                    Data = null
+                });
             }
-            return Ok("¡Cliente eliminado!");
+            catch (Exception ex)
+            {
+                // Manejo especial para errores de clave foránea (si el cliente tiene ventas)
+                if (ex.Message.Contains("REFERENCE"))
+                {
+                     return BadRequest(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "No se puede eliminar el cliente porque tiene ventas asociadas.",
+                        Data = null
+                    });
+                }
+
+                return StatusCode(500, new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Error al eliminar cliente: " + ex.Message,
+                    Data = null
+                });
+            }
         }
     }
 }

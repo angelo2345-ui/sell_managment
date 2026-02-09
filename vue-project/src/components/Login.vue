@@ -1,85 +1,127 @@
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
 
 const emit = defineEmits(['login-success']);
 
-const username = ref('');
+const email = ref('');
 const password = ref('');
-const errorMessage = ref('');
+const error = ref('');
+const isLoading = ref(false);
 
 const handleLogin = async () => {
-  try {
-    // 1. Enviamos credenciales al backend
-    const response = await axios.post('http://localhost:5227/api/auth/login', {
-      username: username.value,
-      password: password.value
-    });
+  error.value = '';
+  isLoading.value = true;
 
-    // 2. Si es exitoso, guardamos el TOKEN en localStorage
-    const token = response.data.token;
-    localStorage.setItem('authToken', token);
-    
-    // 3. Configuramos axios para que siempre use este token en el futuro
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-    // 4. Avisamos al padre (App.vue) que ya entramos
-    emit('login-success');
-
-  } catch (error) {
-    console.error(error);
-    errorMessage.value = "Credenciales incorrectas o error de servidor";
-  }
+  // Simulación de login (Fake API call)
+  setTimeout(() => {
+    if (email.value === 'admin@test.com' && password.value === '123456') {
+      localStorage.setItem('authToken', 'fake-token-123');
+      emit('login-success');
+    } else {
+      error.value = 'Credenciales inválidas (admin@test.com / 123456)';
+    }
+    isLoading.value = false;
+  }, 1000);
 };
 </script>
 
 <template>
-  <div class="login-container">
-    <h2>Iniciar Sesión</h2>
+  <div class="login-card card">
+    <div class="login-header">
+      <div class="brand-logo-container">
+        <img src="/imagenes/dga-logo.jpeg" alt="DGA Aduanas Logo" class="logo-img" />
+      </div>
+      <h2>Bienvenido</h2>
+      <p>Ingresa a tu panel de control</p>
+    </div>
+
     <form @submit.prevent="handleLogin">
       <div class="form-group">
-        <label>Usuario:</label>
-        <input v-model="username" type="text" required />
+        <label for="email">Correo Electrónico</label>
+        <input 
+          id="email" 
+          v-model="email" 
+          type="email" 
+          placeholder="admin@test.com" 
+          required 
+          autofocus
+        />
       </div>
-      <div class="form-group">
-        <label>Contraseña:</label>
-        <input v-model="password" type="password" required />
-      </div>
-      
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
-      <button type="submit">Ingresar</button>
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input 
+          id="password" 
+          v-model="password" 
+          type="password" 
+          placeholder="••••••" 
+          required 
+        />
+      </div>
+
+      <div v-if="error" class="alert alert-error" role="alert">
+        {{ error }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
+        {{ isLoading ? 'Entrando...' : 'Iniciar Sesión' }}
+      </button>
     </form>
   </div>
 </template>
 
 <style scoped>
-.login-container {
-  max-width: 300px;
-  margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: white;
-}
-.form-group {
-  margin-bottom: 15px;
-}
-input {
+.login-card {
   width: 100%;
-  padding: 8px;
-  margin-top: 5px;
+  max-width: 400px;
+  background: var(--bg-surface);
+  padding: 2.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  animation: slideUp 0.5s ease-out;
 }
-button {
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brand-logo-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.logo-img {
+  max-width: 180px; /* Ajustar según preferencia */
+  height: auto;
+  display: block;
+}
+
+.login-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.login-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.btn-block {
   width: 100%;
-  padding: 10px;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-.error {
-  color: red;
-  font-size: 0.9em;
+  padding: 0.875rem;
+  font-size: 1rem;
 }
 </style>

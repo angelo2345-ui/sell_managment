@@ -12,5 +12,15 @@ export default {
   // Función para enviar un nuevo producto
   createProduct(product) {
     return axios.post(API_URL, product);
+  },
+
+  // Función para actualizar un producto existente
+  updateProduct(id, product) {
+    return axios.put(`${API_URL}/${id}`, product);
+  },
+
+  // Función para eliminar un producto
+  deleteProduct(id) {
+    return axios.delete(`${API_URL}/${id}`);
   }
 };

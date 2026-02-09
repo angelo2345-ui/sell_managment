@@ -2,10 +2,8 @@
 import { ref } from 'vue';
 import productService from '../services/productService';
 
-// Definimos los eventos que este componente puede "emitir" hacia arriba (al padre)
 const emit = defineEmits(['product-created']);
 
-// Variables reactivas para el formulario
 const product = ref({
   name: '',
   description: '',
@@ -15,156 +13,91 @@ const product = ref({
 
 const isSubmitting = ref(false);
 const message = ref('');
+const isError = ref(false);
 
-// Función para enviar el formulario
 const submitForm = async () => {
   isSubmitting.value = true;
   message.value = '';
+  isError.value = false;
 
   try {
-    // Enviamos los datos al backend
     await productService.createProduct(product.value);
     
     message.value = '¡Producto guardado con éxito!';
-    
-    // Limpiamos el formulario
     product.value = { name: '', description: '', price: 0, stock: 0 };
-
-    // Avisamos al componente padre (App.vue) que ya se creó uno nuevo
     emit('product-created');
+    setTimeout(() => message.value = '', 3000);
 
   } catch (error) {
     console.error(error);
+    isError.value = true;
     message.value = 'Error al guardar el producto.';
   } finally {
     isSubmitting.value = false;
-    // Borrar el mensaje de éxito después de 3 segundos
-    setTimeout(() => message.value = '', 3000);
   }
 };
 </script>
 
 <template>
-  <div class="form-container">
-    <h3>➕ Nuevo Producto</h3>
+  <div class="card">
+    <div class="card-header">
+      <h3>Nuevo Producto</h3>
+    </div>
     
-    <form @submit.prevent="submitForm" class="product-form">
+    <form @submit.prevent="submitForm">
       <div class="form-group">
-        <label>Nombre:</label>
+        <label>Nombre del Producto</label>
         <input v-model="product.name" required placeholder="Ej: Laptop Gamer" />
       </div>
 
       <div class="form-group">
-        <label>Descripción:</label>
-        <input v-model="product.description" placeholder="Ej: 16GB RAM, 512GB SSD" />
+        <label>Descripción</label>
+        <textarea v-model="product.description" placeholder="Detalles del producto..." rows="2"></textarea>
       </div>
 
       <div class="form-row">
-        <div class="form-group">
-          <label>Precio:</label>
+        <div class="form-group half">
+          <label>Precio ($)</label>
           <input type="number" v-model="product.price" required min="0" step="0.01" />
         </div>
 
-        <div class="form-group">
-          <label>Stock:</label>
+        <div class="form-group half">
+          <label>Stock Inicial</label>
           <input type="number" v-model="product.stock" required min="0" />
         </div>
       </div>
 
-      <button type="submit" :disabled="isSubmitting">
+      <div v-if="message" :class="['alert', isError ? 'alert-error' : 'alert-success']" role="alert">
+        {{ message }}
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
         {{ isSubmitting ? 'Guardando...' : 'Guardar Producto' }}
       </button>
-
-      <p v-if="message" :class="{'success': message.includes('éxito'), 'error': message.includes('Error')}">
-        {{ message }}
-      </p>
     </form>
   </div>
 </template>
 
 <style scoped>
-.form-container {
-  max-width: 500px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-h3 {
-  text-align: center;
-  color: #2c3e50;
-  margin-bottom: 20px;
-}
-
-.product-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
+.card-header h3 {
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
 }
 
 .form-row {
   display: flex;
-  gap: 15px;
+  gap: 1rem;
 }
 
-.form-row .form-group {
+.half {
   flex: 1;
 }
 
-label {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-input:focus {
-  border-color: #42b983;
-  outline: none;
-}
-
-button {
-  background-color: #42b983;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-button:hover {
-  background-color: #3aa876;
-}
-
-button:disabled {
-  background-color: #a8d5c2;
-  cursor: not-allowed;
-}
-
-.success {
-  color: green;
-  text-align: center;
-  font-weight: bold;
-}
-
-.error {
-  color: red;
-  text-align: center;
-  font-weight: bold;
+.w-full {
+  width: 100%;
+  margin-top: 1rem;
 }
 </style>
