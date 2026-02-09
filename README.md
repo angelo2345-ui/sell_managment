@@ -96,6 +96,19 @@ La API está documentada con Swagger. Una vez ejecutado el backend, puedes visit
     ```
 4.  Abre tu navegador en la URL que aparece (generalmente `http://localhost:5173`).
 
+### 3. Ejecutar Pruebas Unitarias
+El proyecto incluye un conjunto de pruebas unitarias para validar la lógica del backend automáticamente.
+
+1.  Navega a la carpeta de pruebas:
+    ```bash
+    cd SellManagement.Tests
+    ```
+2.  Ejecuta los tests:
+    ```bash
+    dotnet test
+    ```
+3.  Verás un reporte en consola indicando cuántas pruebas pasaron.
+
 ---
 
 ## Credenciales de Prueba (Demo)

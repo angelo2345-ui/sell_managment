@@ -11,9 +11,7 @@
 //     public class ProductsControllerTests
 //     {
 //         // Esta prueba verifica que podemos obtener una lista vacía (o llena) de productos
-//         // NOTA: Esta es una prueba de INTEGRACIÓN porque usa la BD real.
-//         // Para hacerla UNITARIA pura, necesitaríamos refactorizar el servicio de BD, 
-//         // pero para tu nivel actual, esto demuestra que sabes probar la API.
+//  
         
 //         [Fact]
 //         public void CreateProduct_ShouldReturnOk()
@@ -24,7 +22,7 @@
 //                 .AddInMemoryCollection(new Dictionary<string, string>
 //                 {
 //                     {"ConnectionStrings:DefaultConnection", "Server=.\\SQLEXPRESS;Database=SellManagementDb;Trusted_Connection=True;TrustServerCertificate=True;"} 
-//                     // ^ ¡Recuerda poner tu conexión real aquí también!
+//                     
 //                 })
 //                 .Build();
 
@@ -41,7 +39,6 @@
 //             };
 
 //             // 2. ACT (Ejecutar el proceso)
-//             // ¡Aquí es donde el robot hace el trabajo duro!
 //             var result = controller.CreateProduct(newProduct);
 
 //             // 3. ASSERT (Verificar el resultado)

@@ -1,5 +1,5 @@
 using Xunit;
-using SellManagement.Api.Models; // Importamos tus modelos
+using SellManagement.Api.Models; // Importamos los modelos
 
 namespace SellManagement.Tests
 {

@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 namespace SellManagement.Api.Services
 {
     // Esta clase sirve para conectarnos a la base de datos de forma fácil.
-    // Imagina que es como un "llavero" que nos da la llave (conexión) para entrar a la base de datos.
     public class DatabaseService
     {
         private readonly IConfiguration _configuration;

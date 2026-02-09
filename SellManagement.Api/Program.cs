@@ -4,8 +4,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Agregamos servicios al contenedor de inyección de dependencias.
+// Configuración para documentación de API con Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -58,7 +58,7 @@ catch (Exception ex)
     Console.WriteLine($"Error inicializando BD: {ex.Message}");
 }
 
-// Configure the HTTP request pipeline.
+// Configuramos el pipeline de solicitudes HTTP.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

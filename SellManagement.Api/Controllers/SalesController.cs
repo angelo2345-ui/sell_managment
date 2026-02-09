@@ -18,7 +18,7 @@ namespace SellManagement.Api.Controllers
             _databaseService = databaseService;
         }
 
-        // CREAR UNA VENTA COMPLETA (MAESTRO-DETALLE)
+        // CREAR UNA VENTA COMPLETA
         [HttpPost]
         public IActionResult CreateSale([FromBody] SaleRequest request)
         {
