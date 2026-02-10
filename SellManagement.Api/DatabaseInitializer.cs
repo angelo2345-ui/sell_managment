@@ -57,6 +57,52 @@ namespace SellManagement.Api
                             }
                         }
                     }
+
+                    // --- MIGRACIONES MANUALES ---
+                    // 1. Agregar columna IsActive a Products si no existe (Soft Delete)
+                    try 
+                    {
+                        string migrationProductsSql = @"
+                            IF EXISTS(SELECT * FROM sys.tables WHERE name = 'Products')
+                            BEGIN
+                                IF NOT EXISTS(SELECT * FROM sys.columns WHERE Name = N'IsActive' AND Object_ID = Object_ID(N'Products'))
+                                BEGIN
+                                    ALTER TABLE Products ADD IsActive BIT NOT NULL DEFAULT 1;
+                                    PRINT 'Columna IsActive agregada a Products.';
+                                END
+                            END";
+                        using (var migrationCmd = new SqlCommand(migrationProductsSql, connection))
+                        {
+                            migrationCmd.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                         Console.WriteLine($"Error en migración Products.IsActive: {ex.Message}");
+                    }
+
+                    // 2. Agregar columna IsActive a Clients si no existe (Soft Delete)
+                    try 
+                    {
+                        string migrationClientsSql = @"
+                            IF EXISTS(SELECT * FROM sys.tables WHERE name = 'Clients')
+                            BEGIN
+                                IF NOT EXISTS(SELECT * FROM sys.columns WHERE Name = N'IsActive' AND Object_ID = Object_ID(N'Clients'))
+                                BEGIN
+                                    ALTER TABLE Clients ADD IsActive BIT NOT NULL DEFAULT 1;
+                                    PRINT 'Columna IsActive agregada a Clients.';
+                                END
+                            END";
+                        using (var migrationCmd = new SqlCommand(migrationClientsSql, connection))
+                        {
+                            migrationCmd.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                         Console.WriteLine($"Error en migración Clients.IsActive: {ex.Message}");
+                    }
+
                     Console.WriteLine("Base de datos inicializada correctamente.");
                 }
                 else

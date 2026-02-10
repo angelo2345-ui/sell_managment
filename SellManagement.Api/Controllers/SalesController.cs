@@ -170,6 +170,110 @@ namespace SellManagement.Api.Controllers
                 return StatusCode(500, new ApiResponse<object> { Success = false, Message = "Error al obtener las ventas: " + ex.Message });
             }
         }
+
+        // ACTUALIZAR VENTA (Simulada por seguridad: Solo actualiza el cliente o fecha, no los productos para no romper stock complejo)
+        // Nota: Para editar productos, se recomienda eliminar y volver a crear la venta para mantener la integridad del stock.
+        [HttpPut("{id}")]
+        public IActionResult UpdateSale(int id, [FromBody] Sale sale)
+        {
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    connection.Open();
+                    string sql = "UPDATE Sales SET ClientId = @ClientId, Date = @Date WHERE Id = @Id";
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@ClientId", sale.ClientId);
+                        command.Parameters.AddWithValue("@Date", sale.Date);
+                        
+                        int rows = command.ExecuteNonQuery();
+                        if (rows == 0) return NotFound(new ApiResponse<string> { Success = false, Message = "Venta no encontrada", Data = null });
+                    }
+                }
+                return Ok(new ApiResponse<string> { Success = true, Message = "Venta actualizada (Cliente/Fecha).", Data = null });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<string> { Success = false, Message = "Error al actualizar venta: " + ex.Message, Data = null });
+            }
+        }
+
+        // ELIMINAR VENTA (Con devolución de Stock)
+        [HttpDelete("{id}")]
+        public IActionResult DeleteSale(int id)
+        {
+            try 
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            // 1. Obtener los detalles de la venta para devolver el stock
+                            string getDetailsSql = "SELECT ProductId, Quantity FROM SaleDetails WHERE SaleId = @SaleId";
+                            var detailsToRestore = new List<(int ProductId, int Quantity)>();
+                            
+                            using (var cmd = new SqlCommand(getDetailsSql, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@SaleId", id);
+                                using (var reader = cmd.ExecuteReader())
+                                {
+                                    while (reader.Read())
+                                    {
+                                        detailsToRestore.Add((reader.GetInt32(0), reader.GetInt32(1)));
+                                    }
+                                }
+                            }
+
+                            // 2. Devolver el stock
+                            foreach (var item in detailsToRestore)
+                            {
+                                string updateStockSql = "UPDATE Products SET Stock = Stock + @Quantity WHERE Id = @ProductId";
+                                using (var updateCmd = new SqlCommand(updateStockSql, connection, transaction))
+                                {
+                                    updateCmd.Parameters.AddWithValue("@Quantity", item.Quantity);
+                                    updateCmd.Parameters.AddWithValue("@ProductId", item.ProductId);
+                                    updateCmd.ExecuteNonQuery();
+                                }
+                            }
+
+                            // 3. Eliminar Detalles
+                            string deleteDetailsSql = "DELETE FROM SaleDetails WHERE SaleId = @SaleId";
+                            using (var cmd = new SqlCommand(deleteDetailsSql, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@SaleId", id);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            // 4. Eliminar Cabecera
+                            string deleteSaleSql = "DELETE FROM Sales WHERE Id = @Id";
+                            using (var cmd = new SqlCommand(deleteSaleSql, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@Id", id);
+                                int rows = cmd.ExecuteNonQuery();
+                                if (rows == 0) throw new Exception("Venta no encontrada");
+                            }
+
+                            transaction.Commit();
+                            return Ok(new ApiResponse<string> { Success = true, Message = "Venta eliminada y stock restaurado.", Data = null });
+                        }
+                        catch (Exception)
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<string> { Success = false, Message = "Error al eliminar venta: " + ex.Message, Data = null });
+            }
+        }
     }
 
     // DTO para enviar la respuesta al frontend

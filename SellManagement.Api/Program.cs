@@ -35,7 +35,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowVueApp",
         builder =>
         {
-            builder.WithOrigins("http://localhost:5173")
+            builder.AllowAnyOrigin() // Permitir cualquier origen (útil si el puerto de Vue cambia)
                    .AllowAnyHeader()
                    .AllowAnyMethod();
         });
@@ -65,7 +65,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Comentado para evitar errores de red en desarrollo local sin certificados válidos
 
 // Usar la política de CORS antes de Authentication
 app.UseCors("AllowVueApp");

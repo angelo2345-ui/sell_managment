@@ -1,10 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import saleService from '../services/saleService';
+import clientService from '../services/clientService'; // Para cargar clientes en el select
 
 const sales = ref([]);
+const clients = ref([]);
 const loading = ref(true);
 const error = ref(null);
+
+// Estado para edición
+const showEditModal = ref(false);
+const editingSale = ref({ id: 0, clientId: 0, date: '', total: 0 });
+
+// Estado para eliminación
+const showDeleteModal = ref(false);
+const saleToDelete = ref(null);
 
 const loadSales = async () => {
   try {
@@ -16,6 +27,96 @@ const loadSales = async () => {
     error.value = "No se pudieron cargar las ventas.";
   } finally {
     loading.value = false;
+  }
+};
+
+const loadClients = async () => {
+  try {
+    clients.value = await clientService.getClients();
+  } catch (err) {
+    console.error("Error cargando clientes para edición", err);
+  }
+};
+
+const openDeleteModal = (sale) => {
+  saleToDelete.value = sale;
+  showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  saleToDelete.value = null;
+};
+
+const executeDelete = async () => {
+  if (!saleToDelete.value) return;
+  const id = saleToDelete.value.id;
+  
+  try {
+    await saleService.deleteSale(id);
+    loadSales(); // Recargar lista
+    // alert('Venta eliminada y stock restaurado.'); // Ya se ve visualmente
+    closeDeleteModal();
+  } catch (err) {
+    console.error('[Frontend] Error al eliminar venta:', err);
+    
+    let message = 'Error desconocido al eliminar.';
+    
+    if (err.response) {
+      message = err.response.data?.message || `Error del servidor (${err.response.status})`;
+    } else if (err.request) {
+      message = 'No se recibió respuesta del servidor. Verifica la conexión.';
+    } else {
+      message = err.message;
+    }
+
+    alert(`⚠️ ${message}`);
+    closeDeleteModal();
+  }
+};
+
+const openEditModal = (sale) => {
+  // Buscamos el ID del cliente basado en el nombre (ya que la API devuelve nombres en el listado)
+  // O idealmente, el endpoint de sales debería devolver también el ClientId.
+  // Como parche rápido, asumimos que sale tiene clientId si el backend lo devuelve, 
+  // si no, tendríamos que buscarlo. 
+  // *Revisión*: El endpoint actual devuelve un objeto anónimo con clientName.
+  // Vamos a necesitar que el backend devuelva el ClientId en el GET.
+  // Por ahora, intentaremos mapear por nombre o usar el que venga.
+  
+  // Ajuste para formato de fecha input datetime-local
+  const dateObj = new Date(sale.date);
+  // Formato YYYY-MM-DDTHH:MM
+  const dateStr = dateObj.toISOString().slice(0, 16); 
+
+  editingSale.value = { 
+    id: sale.id, 
+    clientId: sale.clientId, // Asegurarse que el backend devuelva esto
+    date: dateStr,
+    total: sale.total 
+  };
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  editingSale.value = { id: 0, clientId: 0, date: '', total: 0 };
+};
+
+const saveSaleChanges = async () => {
+  try {
+    await saleService.updateSale(editingSale.value.id, {
+      id: editingSale.value.id,
+      clientId: editingSale.value.clientId,
+      date: editingSale.value.date,
+      total: editingSale.value.total
+    });
+    closeEditModal();
+    loadSales();
+    alert('Venta actualizada (Cliente/Fecha).');
+  } catch (err) {
+    console.error(err);
+    alert('Error al actualizar la venta.');
   }
 };
 
@@ -36,6 +137,7 @@ const formatCurrency = (amount) => {
 
 onMounted(() => {
   loadSales();
+  loadClients(); // Cargar clientes para el select de edición
 });
 </script>
 
@@ -71,6 +173,7 @@ onMounted(() => {
               <th>Productos Vendidos</th>
               <th>Total</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -89,9 +192,58 @@ onMounted(() => {
               <td>
                 <span class="badge-success">Completado</span>
               </td>
+              <td>
+                <button @click="openEditModal(sale)" class="btn-icon btn-edit" title="Editar Venta">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button @click="openDeleteModal(sale)" class="btn-icon btn-delete" title="Eliminar Venta">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Venta -->
+  <div v-if="showEditModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Editar Venta</h3>
+      <p class="text-sm text-muted mb-4">Solo se puede modificar el cliente y la fecha. Para cambiar productos, elimine y cree una nueva venta.</p>
+      
+      <div class="form-group">
+        <label>Cliente:</label>
+        <select v-model="editingSale.clientId" class="form-control">
+          <option v-for="client in clients" :key="client.id" :value="client.id">
+            {{ client.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Fecha:</label>
+        <input type="datetime-local" v-model="editingSale.date" class="form-control" />
+      </div>
+
+      <div class="modal-actions">
+        <button @click="closeEditModal" class="btn-cancel">Cancelar</button>
+        <button @click="saveSaleChanges" class="btn-confirm">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmación Eliminar Venta -->
+  <div v-if="showDeleteModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>¿Eliminar Venta?</h3>
+      <p>Vas a eliminar la venta <strong>#{{ saleToDelete?.id.toString().padStart(6, '0') }}</strong></p>
+      <p class="text-sm text-muted"><strong>Atención:</strong> Esta acción revertirá el stock de los productos vendidos y no se puede deshacer.</p>
+      
+      <div class="modal-actions">
+        <button @click="closeDeleteModal" class="btn-cancel">Cancelar</button>
+        <button @click="executeDelete" class="btn-confirm btn-danger">Sí, Eliminar y Restaurar Stock</button>
       </div>
     </div>
   </div>
@@ -178,6 +330,19 @@ onMounted(() => {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.btn-confirm {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+.btn-danger:hover {
+  background-color: #b91c1c;
 }
 
 /* Scroll horizontal para móviles */

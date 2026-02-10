@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\sellmanagement.api\\SellManagement.Api.csproj": {}
+    "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\SellManagement.Api\\SellManagement.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\sellmanagement.api\\SellManagement.Api.csproj": {
+    "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\SellManagement.Api\\SellManagement.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\sellmanagement.api\\SellManagement.Api.csproj",
+        "projectUniqueName": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\SellManagement.Api\\SellManagement.Api.csproj",
         "projectName": "SellManagement.Api",
-        "projectPath": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\sellmanagement.api\\SellManagement.Api.csproj",
+        "projectPath": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\SellManagement.Api\\SellManagement.Api.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\sellmanagement.api\\obj\\",
+        "outputPath": "C:\\Users\\Admin\\Desktop\\prueba tecnica\\sell_managment\\SellManagement.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"

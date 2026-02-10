@@ -29,7 +29,8 @@ namespace SellManagement.Api.Controllers
                 using (var connection = _databaseService.GetConnection())
                 {
                     connection.Open();
-                    string sql = "SELECT * FROM Products";
+                    // Solo traemos los productos activos (IsActive = 1)
+                    string sql = "SELECT * FROM Products WHERE IsActive = 1";
                     
                     using (var command = new SqlCommand(sql, connection))
                     using (var reader = command.ExecuteReader())
@@ -43,6 +44,7 @@ namespace SellManagement.Api.Controllers
                                 Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
                                 Price = reader.GetDecimal(3),
                                 Stock = reader.GetInt32(4)
+                                // IsActive es true por defecto y por el filtro WHERE
                             });
                         }
                     }
@@ -161,12 +163,16 @@ namespace SellManagement.Api.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeleteProduct(int id)
         {
+            Console.WriteLine($"[DELETE REQUEST] Intentando eliminar producto ID: {id} (Soft Delete)");
             try
             {
                 using (var connection = _databaseService.GetConnection())
                 {
                     connection.Open();
-                    string sql = "DELETE FROM Products WHERE Id = @Id";
+                    
+                    // Implementación de Soft Delete: En lugar de borrar, marcamos como inactivo
+                    // Esto preserva el historial de ventas pero oculta el producto de la lista
+                    string sql = "UPDATE Products SET IsActive = 0 WHERE Id = @Id";
 
                     using (var command = new SqlCommand(sql, connection))
                     {
@@ -194,13 +200,14 @@ namespace SellManagement.Api.Controllers
             }
             catch (Exception ex)
             {
-                // Manejo especial para errores de clave foránea (si el producto ya se vendió)
-                if (ex.Message.Contains("REFERENCE constraint"))
+                Console.WriteLine($"[ERROR DELETE] {ex.Message}");
+                // Si el error es por columna inválida, es porque la migración falló
+                if (ex.Message.Contains("Invalid column name"))
                 {
-                    return BadRequest(new ApiResponse<string>
+                     return BadRequest(new ApiResponse<string>
                     {
                         Success = false,
-                        Message = "No se puede eliminar este producto porque ya tiene ventas registradas.",
+                        Message = "Error interno: La base de datos no está actualizada (Falta IsActive). Reinicie el backend.",
                         Data = null
                     });
                 }

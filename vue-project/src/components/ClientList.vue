@@ -1,21 +1,89 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import clientService from '../services/clientService'; // Usar el servicio
 
 const clients = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
+// Estado para edición
+const showEditModal = ref(false);
+const editingClient = ref({ id: 0, name: '', email: '', phone: '' });
+
+// Estado para eliminación
+const showDeleteModal = ref(false);
+const clientToDelete = ref(null);
+
 const loadClients = async () => {
   try {
     loading.value = true;
-    const response = await axios.get('http://localhost:5227/api/clients');
-    clients.value = response.data.data;
+    clients.value = await clientService.getClients(); // Usar servicio
   } catch (err) {
     console.error("Error al cargar clientes:", err);
     error.value = "No se pudieron cargar los clientes.";
   } finally {
     loading.value = false;
+  }
+};
+
+const openDeleteModal = (client) => {
+  clientToDelete.value = client;
+  showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  clientToDelete.value = null;
+};
+
+const executeDelete = async () => {
+  if (!clientToDelete.value) return;
+  const id = clientToDelete.value.id;
+  
+  try {
+    await clientService.deleteClient(id);
+    loadClients();
+    // alert('Cliente eliminado correctamente (Soft Delete).'); // Ya se ve visualmente
+    closeDeleteModal();
+  } catch (err) {
+    console.error('[Frontend] Error al eliminar cliente:', err);
+    
+    let message = 'Error desconocido al eliminar.';
+    
+    if (err.response) {
+      // El servidor respondió
+      message = err.response.data?.message || `Error del servidor (${err.response.status})`;
+    } else if (err.request) {
+      // No hubo respuesta
+      message = 'No se recibió respuesta del servidor. Verifica la conexión.';
+    } else {
+      message = err.message;
+    }
+
+    alert(`⚠️ ${message}`);
+    closeDeleteModal();
+  }
+};
+
+const openEditModal = (client) => {
+  editingClient.value = { ...client };
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  editingClient.value = { id: 0, name: '', email: '', phone: '' };
+};
+
+const saveClientChanges = async () => {
+  try {
+    await clientService.updateClient(editingClient.value.id, editingClient.value);
+    closeEditModal();
+    loadClients();
+    alert('Cliente actualizado correctamente.');
+  } catch (err) {
+    console.error(err);
+    alert('Error al actualizar cliente.');
   }
 };
 
@@ -71,13 +139,57 @@ onMounted(() => {
               </td>
               <td class="font-mono" data-label="Teléfono">{{ client.phone || 'N/A' }}</td>
               <td data-label="Acciones">
-                <button class="btn-icon" title="Editar">
+                <button @click="openEditModal(client)" class="btn-icon btn-edit" title="Editar">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button @click="openDeleteModal(client)" class="btn-icon btn-delete" title="Eliminar">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Cliente -->
+  <div v-if="showEditModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Editar Cliente</h3>
+      
+      <div class="form-group">
+        <label>Nombre:</label>
+        <input type="text" v-model="editingClient.name" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Email:</label>
+        <input type="email" v-model="editingClient.email" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Teléfono:</label>
+        <input type="text" v-model="editingClient.phone" class="form-control" />
+      </div>
+
+      <div class="modal-actions">
+        <button @click="closeEditModal" class="btn-cancel">Cancelar</button>
+        <button @click="saveClientChanges" class="btn-confirm">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmación Eliminar -->
+  <div v-if="showDeleteModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>¿Eliminar Cliente?</h3>
+      <p>Estás a punto de eliminar a: <strong>{{ clientToDelete?.name }}</strong></p>
+      <p class="text-sm text-muted">Si el cliente tiene historial de compras, se marcará como inactivo (Soft Delete) para no perder los datos.</p>
+      
+      <div class="modal-actions">
+        <button @click="closeDeleteModal" class="btn-cancel">Cancelar</button>
+        <button @click="executeDelete" class="btn-confirm btn-danger">Sí, Eliminar</button>
       </div>
     </div>
   </div>
@@ -197,6 +309,19 @@ onMounted(() => {
 
 .btn-icon:hover {
   background-color: var(--bg-body);
+}
+
+.btn-confirm {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+.btn-danger:hover {
+  background-color: #b91c1c;
 }
 
 /* Tabla responsive */

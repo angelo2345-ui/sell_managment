@@ -25,7 +25,8 @@ namespace SellManagement.Api.Controllers
             using (var connection = _databaseService.GetConnection())
             {
                 connection.Open();
-                string sql = "SELECT * FROM Clients";
+                // Solo traemos clientes activos
+                string sql = "SELECT * FROM Clients WHERE IsActive = 1";
                 using (var command = new SqlCommand(sql, connection))
                 using (var reader = command.ExecuteReader())
                 {
@@ -37,6 +38,7 @@ namespace SellManagement.Api.Controllers
                             Name = reader["Name"].ToString(),
                             Email = reader["Email"].ToString(),
                             Phone = reader["Phone"].ToString()
+                            // IsActive es true por defecto
                         });
                     }
                 }
@@ -98,7 +100,7 @@ namespace SellManagement.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ApiResponse<string>
+                return BadRequest(new ApiResponse<string>
                 {
                     Success = false,
                     Message = "Error al crear cliente: " + ex.Message,
@@ -107,11 +109,11 @@ namespace SellManagement.Api.Controllers
             }
         }
 
-        // 3. ACTUALIZAR UN CLIENTE
+        // 3. ACTUALIZAR CLIENTE
         [HttpPut("{id}")]
         public IActionResult UpdateClient(int id, [FromBody] Client client)
         {
-            try 
+            try
             {
                 using (var connection = _databaseService.GetConnection())
                 {
@@ -123,91 +125,57 @@ namespace SellManagement.Api.Controllers
                         command.Parameters.AddWithValue("@Name", client.Name);
                         command.Parameters.AddWithValue("@Email", client.Email);
                         command.Parameters.AddWithValue("@Phone", client.Phone);
-                        int rows = command.ExecuteNonQuery();
                         
-                        if (rows == 0) 
-                        {
-                            return NotFound(new ApiResponse<string>
-                            {
-                                Success = false,
-                                Message = "Cliente no encontrado.",
-                                Data = null
-                            });
-                        }
+                        int rows = command.ExecuteNonQuery();
+                        if (rows == 0) return NotFound(new ApiResponse<string> { Success = false, Message = "Cliente no encontrado", Data = null });
                     }
                 }
-
-                return Ok(new ApiResponse<string>
-                {
-                    Success = true,
-                    Message = "¡Cliente actualizado correctamente!",
-                    Data = null
-                });
+                return Ok(new ApiResponse<string> { Success = true, Message = "Cliente actualizado correctamente", Data = null });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ApiResponse<string>
-                {
-                    Success = false,
-                    Message = "Error al actualizar cliente: " + ex.Message,
-                    Data = null
-                });
+                return BadRequest(new ApiResponse<string> { Success = false, Message = "Error: " + ex.Message, Data = null });
             }
         }
 
-        // 4. ELIMINAR UN CLIENTE
+        // 4. ELIMINAR CLIENTE
         [HttpDelete("{id}")]
         public IActionResult DeleteClient(int id)
         {
+            Console.WriteLine($"[DELETE CLIENT REQUEST] Intentando eliminar cliente ID: {id} (Soft Delete)");
             try
             {
                 using (var connection = _databaseService.GetConnection())
                 {
                     connection.Open();
-                    string sql = "DELETE FROM Clients WHERE Id = @Id";
+                    
+                    // Implementación Soft Delete: Marcar como inactivo
+                    string sql = "UPDATE Clients SET IsActive = 0 WHERE Id = @Id";
+                    
                     using (var command = new SqlCommand(sql, connection))
                     {
                         command.Parameters.AddWithValue("@Id", id);
                         int rows = command.ExecuteNonQuery();
-                        
-                        if (rows == 0) 
-                        {
-                            return NotFound(new ApiResponse<string>
-                            {
-                                Success = false,
-                                Message = "Cliente no encontrado.",
-                                Data = null
-                            });
-                        }
+                        if (rows == 0) return NotFound(new ApiResponse<string> { Success = false, Message = "Cliente no encontrado", Data = null });
                     }
                 }
-
-                return Ok(new ApiResponse<string>
-                {
-                    Success = true,
-                    Message = "¡Cliente eliminado correctamente!",
-                    Data = null
-                });
+                return Ok(new ApiResponse<string> { Success = true, Message = "Cliente eliminado correctamente", Data = null });
             }
             catch (Exception ex)
             {
-                // Manejo especial para errores de clave foránea (si el cliente tiene ventas)
-                if (ex.Message.Contains("REFERENCE"))
+                Console.WriteLine($"[ERROR DELETE CLIENT] {ex.Message}");
+                // Si el error es por columna inválida, es porque la migración falló
+                if (ex.Message.Contains("Invalid column name"))
                 {
                      return BadRequest(new ApiResponse<string>
                     {
                         Success = false,
-                        Message = "No se puede eliminar el cliente porque tiene ventas asociadas.",
+                        Message = "Error interno: La base de datos no está actualizada (Falta IsActive). Reinicie el backend.",
                         Data = null
                     });
                 }
 
-                return StatusCode(500, new ApiResponse<string>
-                {
-                    Success = false,
-                    Message = "Error al eliminar cliente: " + ex.Message,
-                    Data = null
-                });
+                return BadRequest(new ApiResponse<string> { Success = false, Message = "Error: " + ex.Message, Data = null });
             }
         }
     }

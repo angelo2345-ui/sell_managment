@@ -14,5 +14,8 @@ namespace SellManagement.Api.Models
 
         // Número de teléfono
         public string Phone { get; set; }
+
+        // Indica si el cliente está activo (True) o eliminado (False) - Soft Delete
+        public bool IsActive { get; set; } = true;
     }
 }

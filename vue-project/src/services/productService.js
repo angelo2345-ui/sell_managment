@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Aquí le decimos dónde vive nuestro backend
-const API_URL = 'http://localhost:5227/api/products';
+// Usamos 127.0.0.1 directo para evitar problemas de resolución de localhost y proxies
+const API_URL = 'http://127.0.0.1:5227/api/products';
 
 export default {
   // Función para pedir todos los productos

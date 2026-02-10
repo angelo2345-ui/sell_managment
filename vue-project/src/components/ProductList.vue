@@ -11,6 +11,14 @@ const showRestockModal = ref(false);
 const selectedProduct = ref(null);
 const stockToAdd = ref(1);
 
+// Estado para el modal de edición
+const showEditModal = ref(false);
+const editingProduct = ref({ id: 0, name: '', description: '', price: 0, stock: 0 });
+
+// Estado para el modal de eliminación
+const showDeleteModal = ref(false);
+const productToDelete = ref(null);
+
 const loadProducts = async () => {
   try {
     loading.value = true;
@@ -24,16 +32,44 @@ const loadProducts = async () => {
   }
 };
 
-const deleteProduct = async (id) => {
-  if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
+const openDeleteModal = (product) => {
+  productToDelete.value = product;
+  showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  productToDelete.value = null;
+};
+
+const executeDelete = async () => {
+  if (!productToDelete.value) return;
+  
+  const id = productToDelete.value.id;
+  console.log(`[Frontend] Ejecutando eliminación de producto ID: ${id}`);
   
   try {
     await productService.deleteProduct(id);
-    // Recargar la lista después de eliminar
-    loadProducts();
+    
+    console.log('[Frontend] Eliminación exitosa. Recargando lista...');
+    await loadProducts();
+    // alert('Producto eliminado correctamente.'); // Opcional, ya se ve visualmente que desaparece
+    closeDeleteModal();
   } catch (err) {
-    alert('Error al eliminar el producto. Verifica que no tenga ventas asociadas.');
-    console.error(err);
+    console.error('[Frontend] Error al eliminar:', err);
+    
+    let message = 'Error desconocido al eliminar.';
+    
+    if (err.response) {
+      message = err.response.data?.message || `Error del servidor (${err.response.status})`;
+    } else if (err.request) {
+      message = 'No se recibió respuesta del servidor. Verifica la conexión.';
+    } else {
+      message = err.message;
+    }
+
+    alert(`⚠️ ${message}`);
+    closeDeleteModal(); // Cerramos el modal incluso si falla para no bloquear
   }
 };
 
@@ -47,6 +83,29 @@ const closeRestockModal = () => {
   showRestockModal.value = false;
   selectedProduct.value = null;
   stockToAdd.value = 1;
+};
+
+// Funciones para Edición
+const openEditModal = (product) => {
+  editingProduct.value = { ...product };
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  editingProduct.value = { id: 0, name: '', description: '', price: 0, stock: 0 };
+};
+
+const saveProductChanges = async () => {
+  try {
+    await productService.updateProduct(editingProduct.value.id, editingProduct.value);
+    closeEditModal();
+    loadProducts();
+    alert('Producto actualizado con éxito.');
+  } catch (err) {
+    console.error(err);
+    alert('Error al actualizar el producto.');
+  }
 };
 
 const confirmRestock = async () => {
@@ -127,7 +186,10 @@ onMounted(() => {
                   <button @click="openRestockModal(product)" class="btn-icon btn-restock" title="Recargar Stock">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                   </button>
-                  <button @click="deleteProduct(product.id)" class="btn-icon btn-delete" title="Eliminar">
+                  <button @click="openEditModal(product)" class="btn-icon btn-edit" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button @click="openDeleteModal(product)" class="btn-icon btn-delete" title="Eliminar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </button>
                 </div>
@@ -154,6 +216,47 @@ onMounted(() => {
       <div class="modal-actions">
         <button @click="closeRestockModal" class="btn-cancel">Cancelar</button>
         <button @click="confirmRestock" class="btn-confirm">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición -->
+  <div v-if="showEditModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Editar Producto</h3>
+      
+      <div class="form-group">
+        <label>Nombre:</label>
+        <input type="text" v-model="editingProduct.name" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Descripción:</label>
+        <input type="text" v-model="editingProduct.description" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Precio ($):</label>
+        <input type="number" v-model.number="editingProduct.price" class="form-control" step="0.01" />
+      </div>
+
+      <div class="modal-actions">
+        <button @click="closeEditModal" class="btn-cancel">Cancelar</button>
+        <button @click="saveProductChanges" class="btn-confirm">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación de Eliminación -->
+  <div v-if="showDeleteModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>¿Eliminar Producto?</h3>
+      <p>Estás a punto de eliminar: <strong>{{ productToDelete?.name }}</strong></p>
+      <p class="text-sm text-muted">Esta acción moverá el producto a inactivo si tiene historial de ventas, o lo borrará permanentemente si es nuevo.</p>
+      
+      <div class="modal-actions">
+        <button @click="closeDeleteModal" class="btn-cancel">Cancelar</button>
+        <button @click="executeDelete" class="btn-confirm btn-danger">Sí, Eliminar</button>
       </div>
     </div>
   </div>
@@ -349,4 +452,13 @@ onMounted(() => {
 .btn-confirm {
   background: var(--primary);
   color: white;
-}</style>
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+</style>

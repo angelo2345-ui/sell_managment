@@ -18,5 +18,8 @@ namespace SellManagement.Api.Models
 
         // La cantidad que tenemos disponible en el inventario
         public int Stock { get; set; }
+
+        // Indica si el producto está activo (True) o eliminado (False) - Soft Delete
+        public bool IsActive { get; set; } = true;
     }
 }
